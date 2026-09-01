@@ -21,7 +21,7 @@ A comprehensive sentiment analysis application supporting multiple deep learning
 
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/raviteja311/Sentiment-Analysis.git
+git clone https://github.com/poojithareddy19/TweetEval-Sentiment-Analysis.git
 cd Sentiment-Analysis
 ```
 
