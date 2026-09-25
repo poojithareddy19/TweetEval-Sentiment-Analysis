@@ -14,6 +14,7 @@ from transformers import (
     EarlyStoppingCallback,
 )
 from sklearn.metrics import accuracy_score, f1_score
+from src.models.inference import write_inference_config
 from src.utils.preprocessing import preprocess_for_transformer
 
 
@@ -129,6 +130,8 @@ def main():
     print("Saving model & tokenizer to", OUT_DIR)
     trainer.save_model(OUT_DIR)
     tokenizer.save_pretrained(OUT_DIR)
+    write_inference_config(OUT_DIR, preprocessing="transformer", map_emoticons=False, max_len=MAX_LEN,
+                           extra={"base_model": MODEL_NAME})
     print("Saved. Use src/models/bert_wrapper.py to run inference.")
 
 if __name__ == "__main__":
