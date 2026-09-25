@@ -14,7 +14,7 @@ from transformers import (
     EarlyStoppingCallback,
 )
 from sklearn.metrics import accuracy_score, f1_score
-from src.utils.preprocessing import preprocess_tweet
+from src.utils.preprocessing import preprocess_for_transformer
 
 
 # Base model. This must be a model that has NOT been fine-tuned on TweetEval
@@ -48,7 +48,7 @@ def set_seed(seed=42):
         torch.cuda.manual_seed_all(seed)
 
 def preprocess_examples(examples):
-    texts = [preprocess_tweet(t) for t in examples["text"]]
+    texts = [preprocess_for_transformer(t) for t in examples["text"]]
     return {"text": texts, "label": examples["label"]}
 
 def compute_metrics(eval_pred):
