@@ -1,0 +1,4 @@
+# Development and test dependencies.
+-r inference.txt
+pytest==8.4.2
+ruff==0.13.3

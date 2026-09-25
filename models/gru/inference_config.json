@@ -1,0 +1,24 @@
+{
+  "preprocessing": "tweet",
+  "map_emoticons": true,
+  "max_len": 80,
+  "labels": [
+    "negative",
+    "neutral",
+    "positive"
+  ],
+  "versions": {
+    "python": "3.11.9",
+    "numpy": "2.3.4",
+    "scikit-learn": "1.7.2",
+    "joblib": "1.5.2",
+    "emoji": "2.15.0",
+    "tensorflow": "2.20.0",
+    "keras": "3.12.0",
+    "torch": "2.9.0",
+    "transformers": "4.57.3"
+  },
+  "max_vocab": 10000,
+  "embed_dim": 100,
+  "glove_file": null
+}
