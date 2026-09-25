@@ -115,7 +115,7 @@ python scripts/make_results_table.py
 Macro recall is the official TweetEval sentiment metric.
 
 Note on the currently committed BERT model: according to its
-`models/bert/checkpoint-17106/trainer_state.json` it reached 0.789 validation accuracy and
+`results/bert_trainer_state_2025-12-05.json` (the Trainer log preserved from the original run) it reached 0.789 validation accuracy and
 0.781 validation macro F1 at epoch 1 (the checkpoint that is shipped). Validation loss then
 rose from 0.51 to 0.98 over epochs 2 and 3. That run started from
 `cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task,
