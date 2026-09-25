@@ -32,9 +32,9 @@ from src.utils.preprocessing import preprocess_for_transformer  # noqa: E402
 # while cardiffnlp/twitter-roberta-base-sentiment (the previous choice) was
 # already fine-tuned on this exact task.
 MODEL_NAME = "cardiffnlp/twitter-roberta-base"
-OUT_DIR = "models/bert"          # final model + tokenizer only
-RUN_DIR = "outputs/bert_runs"    # checkpoints and TensorBoard logs (gitignored)
-RESULTS_PATH = "results/bert.json"
+OUT_DIR = "models/roberta"       # final model + tokenizer only
+RUN_DIR = "outputs/roberta_runs" # checkpoints and TensorBoard logs (gitignored)
+RESULTS_PATH = "results/roberta.json"
 NUM_LABELS = 3
 ID2LABEL = {0: "negative", 1: "neutral", 2: "positive"}
 LABEL2ID = {v: k for k, v in ID2LABEL.items()}
@@ -151,7 +151,7 @@ def main():
     trainer.train()
 
     print("Evaluating on validation and test sets...")
-    results = {"model": "bert", "base_model": MODEL_NAME, "subset": args.subset}
+    results = {"model": "roberta", "base_model": MODEL_NAME, "subset": args.subset}
     for split in ("validation", "test"):
         out = trainer.predict(tokenized[split])
         preds = np.argmax(out.predictions, axis=-1)
@@ -166,7 +166,7 @@ def main():
     tokenizer.save_pretrained(out_dir)
     write_inference_config(out_dir, preprocessing="transformer", map_emoticons=False, max_len=MAX_LEN,
                            extra={"base_model": MODEL_NAME})
-    print("Saved. Use src/models/bert_wrapper.py to run inference.")
+    print("Saved. Use src/models/roberta_wrapper.py to run inference.")
 
 if __name__ == "__main__":
     main()

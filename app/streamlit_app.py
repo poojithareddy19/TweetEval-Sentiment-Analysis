@@ -23,14 +23,14 @@ from src.models.inference import (  # noqa: E402
 # Streamlit Layout
 # -------------------------------------------------
 st.set_page_config(page_title="Sentiment Analysis", layout="centered")
-st.title("Sentiment Analysis - LR, LSTM, GRU, BERT")
+st.title("Sentiment Analysis - LR, LSTM, GRU, RoBERTa")
 
-MODEL_CHOICES = ["LogisticRegression", "LSTM", "GRU", "BERT"]
+MODEL_CHOICES = ["LogisticRegression", "LSTM", "GRU", "RoBERTa"]
 MODEL_DIRS = {
     "LogisticRegression": "models/lr",
     "LSTM": "models/lstm",
     "GRU": "models/gru",
-    "BERT": "models/bert",
+    "RoBERTa": "models/roberta",
 }
 model_choice = st.sidebar.selectbox("Select Model", MODEL_CHOICES)
 compare_all = st.sidebar.checkbox(
@@ -63,11 +63,11 @@ def load_keras(model_dir):
 
 
 @st.cache_resource
-def load_bert(model_dir="models/bert"):
-    """Load BERT model wrapper. Imported here so torch and transformers only load when BERT is used."""
-    from src.models.bert_wrapper import BertWrapper
+def load_roberta(model_dir="models/roberta"):
+    """Load the RoBERTa wrapper. Imported here so torch and transformers only load when RoBERTa is used."""
+    from src.models.roberta_wrapper import RobertaWrapper
 
-    return BertWrapper(model_dir)
+    return RobertaWrapper(model_dir)
 
 
 # -------------------------------------------------
@@ -86,8 +86,8 @@ def predict_proba(model_name, raw_text):
     if model_name in ("LSTM", "GRU"):
         tokenizer, model = load_keras(model_dir)
         return keras_predict_proba(tokenizer, model, cleaned_text, cfg), cfg
-    bert = load_bert(model_dir)
-    return bert.predict_proba([cleaned_text])[0], cfg
+    roberta = load_roberta(model_dir)
+    return roberta.predict_proba([cleaned_text])[0], cfg
 
 
 # -------------------------------------------------

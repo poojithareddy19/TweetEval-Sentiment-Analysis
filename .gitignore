@@ -209,6 +209,6 @@ __marimo__/
 # Project specific
 # Training run artifacts (checkpoints, TensorBoard logs)
 outputs/
-models/bert/checkpoint-*/
-models/bert/runs/
-models/bert/training_args.bin
+models/roberta/checkpoint-*/
+models/roberta/runs/
+models/roberta/training_args.bin

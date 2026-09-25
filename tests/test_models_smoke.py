@@ -63,14 +63,14 @@ def test_keras_rnn_predicts(name):
     _check_probs(probs)
 
 
-def test_bert_predicts():
+def test_roberta_predicts():
     pytest.importorskip("torch")
     pytest.importorskip("transformers")
-    _require(MODELS / "bert" / "model.safetensors", MODELS / "bert" / "config.json")
-    from src.models.bert_wrapper import BertWrapper
+    _require(MODELS / "roberta" / "model.safetensors", MODELS / "roberta" / "config.json")
     from src.models.inference import load_inference_config, preprocess_for_model
+    from src.models.roberta_wrapper import RobertaWrapper
 
-    cfg = load_inference_config(MODELS / "bert")
-    bert = BertWrapper(str(MODELS / "bert"), device="cpu")
-    probs = bert.predict_proba([preprocess_for_model(SENTENCE, cfg)])[0]
+    cfg = load_inference_config(MODELS / "roberta")
+    roberta = RobertaWrapper(str(MODELS / "roberta"), device="cpu")
+    probs = roberta.predict_proba([preprocess_for_model(SENTENCE, cfg)])[0]
     _check_probs(probs)
