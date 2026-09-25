@@ -1,12 +1,18 @@
-
 import argparse
+import os
 from pathlib import Path
 
-import numpy as np
-import torch
-from datasets import load_dataset
-from sklearn.metrics import accuracy_score, f1_score, recall_score
-from transformers import (
+# This script is PyTorch-only. tensorflow is installed in the same environment for
+# the Keras models, and with Keras 3 transformers' TensorFlow integration fails to
+# import ("install tf-keras"). USE_TF=0 makes transformers ignore TensorFlow. It must
+# be set before transformers is imported.
+os.environ.setdefault("USE_TF", "0")
+
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+from datasets import load_dataset  # noqa: E402
+from sklearn.metrics import accuracy_score, f1_score, recall_score  # noqa: E402
+from transformers import (  # noqa: E402
     AutoModelForSequenceClassification,
     AutoTokenizer,
     DataCollatorWithPadding,
@@ -15,10 +21,10 @@ from transformers import (
     TrainingArguments,
 )
 
-from src.models.inference import write_inference_config
-from src.utils.io import save_json
-from src.utils.metrics import compute_metrics as full_metrics
-from src.utils.preprocessing import preprocess_for_transformer
+from src.models.inference import write_inference_config  # noqa: E402
+from src.utils.io import save_json  # noqa: E402
+from src.utils.metrics import compute_metrics as full_metrics  # noqa: E402
+from src.utils.preprocessing import preprocess_for_transformer  # noqa: E402
 
 # Base model. This must be a model that has NOT been fine-tuned on TweetEval
 # sentiment, otherwise the comparison with LR, LSTM and GRU is not fair.
