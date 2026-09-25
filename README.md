@@ -1,10 +1,10 @@
 # Sentiment-Analysis
 
-A comprehensive sentiment analysis application supporting multiple deep learning models including Logistic Regression, LSTM, GRU, and BERT.
+A comprehensive sentiment analysis application supporting multiple deep learning models including Logistic Regression, LSTM, GRU, and RoBERTa.
 
 ## Features
 
-- **Multiple Models**: Choose between LogisticRegression, LSTM, GRU, and BERT for sentiment classification
+- **Multiple Models**: Choose between LogisticRegression, LSTM, GRU, and RoBERTa for sentiment classification
 - **Pre-trained Models**: All models come pre-trained and ready to use
 - **Easy-to-use Interface**: Streamlit-based web UI for text sentiment analysis
 - **Fast Inference**: Optimized for quick predictions
@@ -57,7 +57,7 @@ Check that the files are real binaries and not pointers:
 
 ```bash
 git lfs ls-files
-ls -l models/lr/pipeline.joblib models/lstm/model_final.keras models/bert/model.safetensors
+ls -l models/lr/pipeline.joblib models/lstm/model_final.keras models/roberta/model.safetensors
 ```
 
 Real files are hundreds of KB to hundreds of MB. A pointer is a text file of about 130 bytes
@@ -85,16 +85,16 @@ pip install -r requirements/train.txt
 python -m src.training.train_lr      # TF-IDF + Logistic Regression, fast on CPU
 python -m src.training.train_lstm    # BiLSTM, CPU is slow but works
 python -m src.training.train_gru     # BiGRU
-python -m src.training.train_bert    # RoBERTa fine-tuning, needs a GPU in practice
+python -m src.training.train_roberta # RoBERTa fine-tuning, needs a GPU in practice
 ```
 
-Each script overwrites the model files under `models/<name>/`. BERT checkpoints and
-TensorBoard logs go to `outputs/bert_runs/`, which is gitignored.
+Each script overwrites the model files under `models/<name>/`. RoBERTa checkpoints and
+TensorBoard logs go to `outputs/roberta_runs/`, which is gitignored.
 
 ## Usage
 
 1. Open the Streamlit app in your browser
-2. Select a model from the sidebar (LogisticRegression, LSTM, GRU, or BERT)
+2. Select a model from the sidebar (LogisticRegression, LSTM, GRU, or RoBERTa)
 3. Enter text in the text area
 4. Click "Predict" to analyze sentiment
 5. View the sentiment classification and confidence scores
@@ -119,12 +119,12 @@ Macro recall is the official TweetEval sentiment metric. The BiLSTM and BiGRU ro
 early stopping patience 2, balanced class weights, both stopped after epoch 4 with epoch 2
 restored). No RoBERTa row exists yet because retraining from the task-neutral base needs a GPU.
 
-Note on the currently committed BERT model: according to its
-`results/bert_trainer_state_2025-12-05.json` (the Trainer log preserved from the original run) it reached 0.789 validation accuracy and
+Note on the currently committed RoBERTa model: according to its
+`results/roberta_trainer_state_2025-12-05.json` (the Trainer log preserved from the original run) it reached 0.789 validation accuracy and
 0.781 validation macro F1 at epoch 1 (the checkpoint that is shipped). Validation loss then
 rose from 0.51 to 0.98 over epochs 2 and 3. That run started from
 `cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task,
-so its numbers are not comparable with the other models. Retraining with `train_bert.py` now
+so its numbers are not comparable with the other models. Retraining with `train_roberta.py` now
 starts from the task-neutral `cardiffnlp/twitter-roberta-base`. No test-split numbers exist for
 any model until training is rerun.
 
@@ -135,7 +135,7 @@ any model until training is rerun.
 | LogisticRegression | Shallow | scikit-learn | `models/lr/pipeline.joblib` |
 | LSTM | Deep Learning | TensorFlow/Keras | `models/lstm/best.keras` (fallback `model_final.keras`) |
 | GRU | Deep Learning | TensorFlow/Keras | `models/gru/best.keras` (fallback `model_final.keras`) |
-| BERT | Transformer | Hugging Face | `models/bert/` (RoBERTa architecture) |
+| RoBERTa | Transformer | Hugging Face | `models/roberta/` |
 
 ## Project Structure
 
@@ -144,7 +144,7 @@ Sentiment-Analysis/
 ├── app/
 │   └── streamlit_app.py          # Main Streamlit application
 ├── models/
-│   ├── bert/                      # Pre-trained BERT model
+│   ├── roberta/                   # Fine-tuned RoBERTa model
 │   ├── gru/                       # Pre-trained GRU model
 │   ├── lstm/                      # Pre-trained LSTM model
 │   └── lr/                        # Pre-trained Logistic Regression model
@@ -160,7 +160,7 @@ Sentiment-Analysis/
 ## Dependencies
 
 Main dependencies for inference:
-- **transformers**: Hugging Face transformer models (for BERT)
+- **transformers**: Hugging Face transformer models (for RoBERTa)
 - **torch**: PyTorch framework
 - **tensorflow**: TensorFlow/Keras for LSTM and GRU
 - **scikit-learn**: Machine learning utilities

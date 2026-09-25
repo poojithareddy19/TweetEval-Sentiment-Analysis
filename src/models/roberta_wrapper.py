@@ -12,9 +12,9 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer  # no
 from src.utils.io import check_not_lfs_pointer  # noqa: E402
 
 
-class BertWrapper:
+class RobertaWrapper:
 
-    def __init__(self, model_dir: str = "models/bert", device: str = None):
+    def __init__(self, model_dir: str = "models/roberta", device: str = None):
         self.model_dir = Path(model_dir)
         if not self.model_dir.exists():
             raise FileNotFoundError(f"Model dir not found: {self.model_dir}")
@@ -22,7 +22,7 @@ class BertWrapper:
         weights = self.model_dir / "model.safetensors"
         if not weights.exists():
             raise FileNotFoundError(f"model.safetensors missing in {self.model_dir}")
-        check_not_lfs_pointer(weights, "BERT weights")
+        check_not_lfs_pointer(weights, "RoBERTa weights")
 
         # choose device automatically if not provided
         if device is None:

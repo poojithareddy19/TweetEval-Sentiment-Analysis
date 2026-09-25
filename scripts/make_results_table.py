@@ -10,8 +10,13 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 RESULTS_DIR = REPO / "results"
-DISPLAY_NAMES = {"lr": "TF-IDF + Logistic Regression", "lstm": "BiLSTM", "gru": "BiGRU", "bert": "RoBERTa (fine-tuned)"}
-ORDER = ["lr", "lstm", "gru", "bert"]
+DISPLAY_NAMES = {
+    "lr": "TF-IDF + Logistic Regression",
+    "lstm": "BiLSTM",
+    "gru": "BiGRU",
+    "roberta": "RoBERTa (fine-tuned)",
+}
+ORDER = ["lr", "lstm", "gru", "roberta"]
 
 
 def build_table(results_dir=RESULTS_DIR, split="test"):

@@ -1,5 +1,5 @@
 # Inference dependencies. Pinned to the versions the committed models were trained and
-# saved with (see models/bert/config.json for transformers). Python 3.10 or 3.11.
+# saved with (see models/roberta/config.json for transformers). Python 3.10 or 3.11.
 transformers==4.57.3
 torch==2.9.0
 tensorflow==2.20.0
