@@ -1,10 +1,15 @@
+import os
 from pathlib import Path
 
-import numpy as np
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+# PyTorch-only wrapper: keep transformers from touching the TensorFlow install
+# (Keras 3 breaks its TF integration). Must be set before transformers is imported.
+os.environ.setdefault("USE_TF", "0")
 
-from src.utils.io import check_not_lfs_pointer
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+from transformers import AutoModelForSequenceClassification, AutoTokenizer  # noqa: E402
+
+from src.utils.io import check_not_lfs_pointer  # noqa: E402
 
 
 class BertWrapper:
