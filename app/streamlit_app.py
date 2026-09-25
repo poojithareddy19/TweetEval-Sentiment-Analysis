@@ -11,7 +11,6 @@ parent_dir = current_dir.parent
 sys.path.insert(0, str(parent_dir))
 os.chdir(str(parent_dir))
 
-from src.models.bert_wrapper import BertWrapper  # noqa: E402
 from src.models.inference import (  # noqa: E402
     keras_predict_proba,
     load_inference_config,
@@ -60,7 +59,9 @@ def load_keras(model_dir):
 
 @st.cache_resource
 def load_bert(model_dir="models/bert"):
-    """Load BERT model wrapper."""
+    """Load BERT model wrapper. Imported here so torch and transformers only load when BERT is used."""
+    from src.models.bert_wrapper import BertWrapper
+
     return BertWrapper(model_dir)
 
 
