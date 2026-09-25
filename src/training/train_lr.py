@@ -31,9 +31,11 @@ def main():
         ('clf', LogisticRegression(max_iter=2000, class_weight='balanced', solver='saga'))
     ])
 
+    # Small but real grid. The previous grid had a single combination, which
+    # only paid the cross-validation cost without searching anything.
     params = {
-        'tfidf__max_features': [10000],
-        'clf__C': [1.0]
+        'tfidf__max_features': [20000, 50000, None],
+        'clf__C': [0.5, 1.0, 2.0, 4.0],
     }
 
     print("Starting GridSearchCV (this may take a while)...")
