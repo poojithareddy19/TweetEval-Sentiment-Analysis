@@ -1,4 +1,5 @@
 
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -64,13 +65,29 @@ def compute_metrics(eval_pred):
         "recall_macro": recall_score(labels, preds, average="macro"),
     }
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Fine-tune a RoBERTa model on TweetEval sentiment.")
+    parser.add_argument("--out-dir", default=OUT_DIR, help="Where to save the final model and tokenizer.")
+    parser.add_argument("--run-dir", default=RUN_DIR, help="Where checkpoints and logs go.")
+    parser.add_argument("--results-path", default=RESULTS_PATH, help="Where to save the metrics JSON.")
+    parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument("--subset", type=int, default=None,
+                        help="Use only the first N examples of each split (smoke runs only).")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    out_dir, run_dir, results_path = args.out_dir, args.run_dir, args.results_path
     set_seed(SEED)
-    Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
-    Path(RUN_DIR).mkdir(parents=True, exist_ok=True)
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    Path(run_dir).mkdir(parents=True, exist_ok=True)
 
     print("Loading dataset (tweet_eval: sentiment)...")
     ds = load_dataset("cardiffnlp/tweet_eval", "sentiment")
+    if args.subset:
+        for split in list(ds.keys()):
+            ds[split] = ds[split].select(range(min(args.subset, len(ds[split]))))
 
     ds = ds.map(preprocess_examples, batched=True)
 
@@ -94,12 +111,12 @@ def main():
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     training_args = TrainingArguments(
-        output_dir=RUN_DIR,
+        output_dir=run_dir,
         eval_strategy="epoch",
         save_strategy="epoch",
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
-        num_train_epochs=EPOCHS,
+        num_train_epochs=args.epochs,
         learning_rate=LR,
         weight_decay=WEIGHT_DECAY,
         warmup_ratio=WARMUP_RATIO,
@@ -128,20 +145,20 @@ def main():
     trainer.train()
 
     print("Evaluating on validation and test sets...")
-    results = {"model": "bert", "base_model": MODEL_NAME}
+    results = {"model": "bert", "base_model": MODEL_NAME, "subset": args.subset}
     for split in ("validation", "test"):
         out = trainer.predict(tokenized[split])
         preds = np.argmax(out.predictions, axis=-1)
         results[split] = full_metrics(out.label_ids, preds)
         summary = {k: v for k, v in results[split].items() if k in ("accuracy", "f1_macro", "recall_macro")}
         print(f"{split} metrics:", summary)
-    save_json(results, RESULTS_PATH)
-    print("Saved results to", RESULTS_PATH)
+    save_json(results, results_path)
+    print("Saved results to", results_path)
 
-    print("Saving model & tokenizer to", OUT_DIR)
-    trainer.save_model(OUT_DIR)
-    tokenizer.save_pretrained(OUT_DIR)
-    write_inference_config(OUT_DIR, preprocessing="transformer", map_emoticons=False, max_len=MAX_LEN,
+    print("Saving model & tokenizer to", out_dir)
+    trainer.save_model(out_dir)
+    tokenizer.save_pretrained(out_dir)
+    write_inference_config(out_dir, preprocessing="transformer", map_emoticons=False, max_len=MAX_LEN,
                            extra={"base_model": MODEL_NAME})
     print("Saved. Use src/models/bert_wrapper.py to run inference.")
 
