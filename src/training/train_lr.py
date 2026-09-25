@@ -1,16 +1,17 @@
-﻿# src/training/train_lr.py
-import joblib
-import numpy as np
-import pandas as pd
+# src/training/train_lr.py
 from pathlib import Path
+
+import joblib
+import pandas as pd
 from datasets import load_dataset
-from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
-from src.utils.preprocessing import preprocess_tweet
-from src.utils.metrics import compute_metrics
+from sklearn.pipeline import Pipeline
+
 from src.models.inference import write_inference_config
+from src.utils.metrics import compute_metrics
+from src.utils.preprocessing import preprocess_tweet
 
 OUT_DIR = Path("models/lr")
 OUT_DIR.mkdir(parents=True, exist_ok=True)

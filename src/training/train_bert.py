@@ -1,22 +1,21 @@
 
-import os
 from pathlib import Path
+
 import numpy as np
 import torch
-
 from datasets import load_dataset
+from sklearn.metrics import accuracy_score, f1_score
 from transformers import (
-    AutoTokenizer,
     AutoModelForSequenceClassification,
-    TrainingArguments,
-    Trainer,
+    AutoTokenizer,
     DataCollatorWithPadding,
     EarlyStoppingCallback,
+    Trainer,
+    TrainingArguments,
 )
-from sklearn.metrics import accuracy_score, f1_score
+
 from src.models.inference import write_inference_config
 from src.utils.preprocessing import preprocess_for_transformer
-
 
 # Base model. This must be a model that has NOT been fine-tuned on TweetEval
 # sentiment, otherwise the comparison with LR, LSTM and GRU is not fair.
@@ -67,7 +66,7 @@ def main():
 
     print("Loading dataset (tweet_eval: sentiment)...")
     ds = load_dataset("cardiffnlp/tweet_eval", "sentiment")
- 
+
     ds = ds.map(preprocess_examples, batched=True)
 
     print("Loading tokenizer & model:", MODEL_NAME)
