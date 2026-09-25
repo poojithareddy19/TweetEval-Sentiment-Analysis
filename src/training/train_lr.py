@@ -28,7 +28,7 @@ def main():
 
     pipe = Pipeline([
         ('tfidf', TfidfVectorizer(ngram_range=(1,2), min_df=3, max_df=0.9)),
-        ('clf', LogisticRegression(max_iter=2000, class_weight='balanced', solver='saga', multi_class='multinomial'))
+        ('clf', LogisticRegression(max_iter=2000, class_weight='balanced', solver='saga'))
     ])
 
     params = {
