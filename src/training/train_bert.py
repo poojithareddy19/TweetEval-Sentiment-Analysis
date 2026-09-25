@@ -11,21 +11,32 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorWithPadding,
+    EarlyStoppingCallback,
 )
 from sklearn.metrics import accuracy_score, f1_score
 from src.utils.preprocessing import preprocess_tweet
 
 
-MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment"  
-OUT_DIR = "models/bert"
+# Base model. This must be a model that has NOT been fine-tuned on TweetEval
+# sentiment, otherwise the comparison with LR, LSTM and GRU is not fair.
+# cardiffnlp/twitter-roberta-base is pretrained on tweets only (masked LM),
+# while cardiffnlp/twitter-roberta-base-sentiment (the previous choice) was
+# already fine-tuned on this exact task.
+MODEL_NAME = "cardiffnlp/twitter-roberta-base"
+OUT_DIR = "models/bert"          # final model + tokenizer only
+RUN_DIR = "outputs/bert_runs"    # checkpoints and TensorBoard logs (gitignored)
 NUM_LABELS = 3
-BATCH_SIZE = 8       
+ID2LABEL = {0: "negative", 1: "neutral", 2: "positive"}
+LABEL2ID = {v: k for k, v in ID2LABEL.items()}
+BATCH_SIZE = 8
 EPOCHS = 3
 LR = 2e-5
 WEIGHT_DECAY = 0.01
+WARMUP_RATIO = 0.1
+EARLY_STOPPING_PATIENCE = 1
 MAX_LEN = 128
 SEED = 42
-FP16 = False           
+FP16 = False
 # ---------------------------
 
 def set_seed(seed=42):
@@ -51,6 +62,7 @@ def compute_metrics(eval_pred):
 def main():
     set_seed(SEED)
     Path(OUT_DIR).mkdir(parents=True, exist_ok=True)
+    Path(RUN_DIR).mkdir(parents=True, exist_ok=True)
 
     print("Loading dataset (tweet_eval: sentiment)...")
     ds = load_dataset("cardiffnlp/tweet_eval", "sentiment")
@@ -59,7 +71,12 @@ def main():
 
     print("Loading tokenizer & model:", MODEL_NAME)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=True)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=NUM_LABELS)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        MODEL_NAME,
+        num_labels=NUM_LABELS,
+        id2label=ID2LABEL,
+        label2id=LABEL2ID,
+    )
 
     def tokenize_fn(batch):
         return tokenizer(batch["text"], truncation=True, padding=False, max_length=MAX_LEN)
@@ -72,7 +89,7 @@ def main():
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     training_args = TrainingArguments(
-        output_dir=OUT_DIR,
+        output_dir=RUN_DIR,
         eval_strategy="epoch",
         save_strategy="epoch",
         per_device_train_batch_size=BATCH_SIZE,
@@ -80,6 +97,7 @@ def main():
         num_train_epochs=EPOCHS,
         learning_rate=LR,
         weight_decay=WEIGHT_DECAY,
+        warmup_ratio=WARMUP_RATIO,
         logging_steps=50,
         save_total_limit=2,
         load_best_model_at_end=True,
@@ -98,6 +116,7 @@ def main():
         processing_class=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=EARLY_STOPPING_PATIENCE)],
     )
 
     print("Starting training...")
