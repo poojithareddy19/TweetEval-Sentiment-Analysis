@@ -43,6 +43,10 @@ def parse_args(name):
         "recorded in inference_config.json so the app applies the same preprocessing.",
     )
     parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument("--out-dir", default=None, help="Override the model output directory (smoke runs).")
+    parser.add_argument("--results-path", default=None, help="Override the metrics JSON path (smoke runs).")
+    parser.add_argument("--subset", type=int, default=None,
+                        help="Use only the first N examples of each split (smoke runs only).")
     parser.add_argument(
         "--glove-path",
         default=None,
@@ -80,7 +84,9 @@ def load_glove_embeddings(glove_path, tokenizer, vocab_size, embed_dim):
     return matrix
 
 
-def preprocess_split(split, map_emoticons):
+def preprocess_split(split, map_emoticons, subset=None):
+    if subset:
+        split = split.select(range(min(subset, len(split))))
     texts = [preprocess_tweet(t, map_emoticons=map_emoticons) for t in split["text"]]
     labels = np.array(split["label"])
     return texts, labels
@@ -91,7 +97,8 @@ def make_sequences(tokenizer, texts, max_len=MAX_LEN):
     return pad_sequences(seq, maxlen=max_len, padding="post", truncating="post")
 
 
-def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove_path=None):
+def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove_path=None,
+              results_path=None, subset=None):
     """Train a Keras RNN classifier and save tokenizer, best and final weights to out_dir."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -103,9 +110,9 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove
     ds = load_dataset("cardiffnlp/tweet_eval", "sentiment")
 
     print(f"Preprocessing (map_emoticons={map_emoticons})...")
-    train_texts, train_labels = preprocess_split(ds["train"], map_emoticons)
-    val_texts, val_labels = preprocess_split(ds["validation"], map_emoticons)
-    test_texts, test_labels = preprocess_split(ds["test"], map_emoticons)
+    train_texts, train_labels = preprocess_split(ds["train"], map_emoticons, subset)
+    val_texts, val_labels = preprocess_split(ds["validation"], map_emoticons, subset)
+    test_texts, test_labels = preprocess_split(ds["test"], map_emoticons, subset)
 
     print(f"Fitting tokenizer (max_vocab={MAX_VOCAB})...")
     tokenizer = Tokenizer(num_words=MAX_VOCAB, oov_token="<OOV>")
@@ -168,8 +175,8 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove
     summary_keys = ("accuracy", "f1_macro", "recall_macro")
     print("Validation metrics:", {k: v for k, v in val_metrics.items() if k in summary_keys})
     print("Test metrics:", {k: v for k, v in test_metrics.items() if k in summary_keys})
-    results_path = Path("results") / f"{name.lower()}.json"
-    save_json({"model": name.lower(), "map_emoticons": map_emoticons, "epochs_max": epochs,
+    results_path = Path(results_path) if results_path else Path("results") / f"{name.lower()}.json"
+    save_json({"model": name.lower(), "map_emoticons": map_emoticons, "epochs_max": epochs, "subset": subset,
                "class_weight": class_weight, "glove_file": Path(glove_path).name if glove_path else None,
                "validation": val_metrics, "test": test_metrics}, results_path)
     print("Saved results to:", results_path)
