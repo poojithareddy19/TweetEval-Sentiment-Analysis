@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 import tensorflow as tf
 from datasets import load_dataset
+from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -87,6 +88,11 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
     y_train = tf.keras.utils.to_categorical(train_labels, NUM_CLASSES)
     y_val = tf.keras.utils.to_categorical(val_labels, NUM_CLASSES)
 
+    # Balanced class weights: TweetEval sentiment is skewed towards neutral.
+    class_weights = compute_class_weight("balanced", classes=np.arange(NUM_CLASSES), y=train_labels)
+    class_weight = {int(i): float(w) for i, w in enumerate(class_weights)}
+    print("Class weights (balanced):", class_weight)
+
     vocab_size = min(MAX_VOCAB, len(tokenizer.word_index) + 1)
     print(f"Building {name} (vocab={vocab_size}, embed={EMBED_DIM}, max_len={MAX_LEN})")
     model = build_fn(vocab_size=vocab_size, max_len=MAX_LEN, embed_dim=EMBED_DIM)
@@ -102,6 +108,7 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
         epochs=epochs,
         batch_size=BATCH,
         callbacks=[ckpt, es],
+        class_weight=class_weight,
         verbose=1,
     )
 
@@ -125,6 +132,7 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
     print("Test metrics:", {k: v for k, v in test_metrics.items() if k in summary_keys})
     results_path = Path("results") / f"{name.lower()}.json"
     save_json({"model": name.lower(), "map_emoticons": map_emoticons, "epochs_max": epochs,
+               "class_weight": class_weight,
                "validation": val_metrics, "test": test_metrics}, results_path)
     print("Saved results to:", results_path)
     return model, tokenizer, val_metrics, test_metrics
