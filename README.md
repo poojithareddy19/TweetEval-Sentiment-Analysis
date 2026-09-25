@@ -128,9 +128,9 @@ any model until training is rerun.
 | Model | Type | Framework | File |
 |-------|------|-----------|------|
 | LogisticRegression | Shallow | scikit-learn | `models/lr/pipeline.joblib` |
-| LSTM | Deep Learning | TensorFlow/Keras | `models/lstm/model_final.keras` |
-| GRU | Deep Learning | TensorFlow/Keras | `models/gru/model_final.keras` |
-| BERT | Transformer | Hugging Face | `models/bert/` |
+| LSTM | Deep Learning | TensorFlow/Keras | `models/lstm/best.keras` (fallback `model_final.keras`) |
+| GRU | Deep Learning | TensorFlow/Keras | `models/gru/best.keras` (fallback `model_final.keras`) |
+| BERT | Transformer | Hugging Face | `models/bert/` (RoBERTa architecture) |
 
 ## Project Structure
 
@@ -166,7 +166,8 @@ Main dependencies for inference:
 
 - All models are pre-trained and ready for inference
 - No training data is required to run the application
-- The app preprocesses input text automatically
+- The app preprocesses input text automatically, following each model's `inference_config.json`
+  (legacy defaults when the file is missing)
 - Sentiment classes: Negative, Neutral, Positive
 
 ## License
