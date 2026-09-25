@@ -43,7 +43,41 @@ def parse_args(name):
         "recorded in inference_config.json so the app applies the same preprocessing.",
     )
     parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument(
+        "--glove-path",
+        default=None,
+        help="Optional path to a GloVe text file (e.g. glove.twitter.27B.100d.txt) used to initialise "
+        "the embedding layer. Its dimension must equal EMBED_DIM. Not downloaded automatically.",
+    )
     return parser.parse_args()
+
+
+def load_glove_embeddings(glove_path, tokenizer, vocab_size, embed_dim):
+    """Build a (vocab_size, embed_dim) matrix from a GloVe text file for the tokenizer's vocabulary.
+
+    Words missing from the GloVe file keep a small random init (Keras' default
+    uniform(-0.05, 0.05)); row 0 (padding) is zero.
+    """
+    rng = np.random.default_rng(SEED)
+    matrix = rng.uniform(-0.05, 0.05, size=(vocab_size, embed_dim)).astype("float32")
+    matrix[0] = 0.0
+    found = 0
+    with open(glove_path, encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            parts = line.rstrip().split(" ")
+            idx = tokenizer.word_index.get(parts[0])
+            if idx is None or idx >= vocab_size:
+                continue
+            vec = np.asarray(parts[1:], dtype="float32")
+            if vec.shape[0] != embed_dim:
+                raise ValueError(
+                    f"GloVe file has dimension {vec.shape[0]} but EMBED_DIM is {embed_dim}; "
+                    "use the matching GloVe file or change EMBED_DIM."
+                )
+            matrix[idx] = vec
+            found += 1
+    print(f"GloVe coverage: {found}/{vocab_size - 1} vocabulary words found in {glove_path}")
+    return matrix
 
 
 def preprocess_split(split, map_emoticons):
@@ -57,7 +91,7 @@ def make_sequences(tokenizer, texts, max_len=MAX_LEN):
     return pad_sequences(seq, maxlen=max_len, padding="post", truncating="post")
 
 
-def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
+def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove_path=None):
     """Train a Keras RNN classifier and save tokenizer, best and final weights to out_dir."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -95,7 +129,10 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
 
     vocab_size = min(MAX_VOCAB, len(tokenizer.word_index) + 1)
     print(f"Building {name} (vocab={vocab_size}, embed={EMBED_DIM}, max_len={MAX_LEN})")
-    model = build_fn(vocab_size=vocab_size, max_len=MAX_LEN, embed_dim=EMBED_DIM)
+    embedding_weights = None
+    if glove_path:
+        embedding_weights = load_glove_embeddings(glove_path, tokenizer, vocab_size, EMBED_DIM)
+    model = build_fn(vocab_size=vocab_size, max_len=MAX_LEN, embed_dim=EMBED_DIM, embedding_weights=embedding_weights)
     model.summary()
 
     ckpt = ModelCheckpoint(str(out_dir / "best.keras"), save_best_only=True, monitor="val_loss")
@@ -119,7 +156,8 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
     print("Saved final model:", final_path)
 
     write_inference_config(out_dir, preprocessing="tweet", map_emoticons=map_emoticons, max_len=MAX_LEN,
-                           extra={"max_vocab": MAX_VOCAB, "embed_dim": EMBED_DIM})
+                           extra={"max_vocab": MAX_VOCAB, "embed_dim": EMBED_DIM,
+                                  "glove_file": Path(glove_path).name if glove_path else None})
     print("Saved inference config to:", out_dir / "inference_config.json")
 
     print("Evaluating...")
@@ -132,7 +170,7 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
     print("Test metrics:", {k: v for k, v in test_metrics.items() if k in summary_keys})
     results_path = Path("results") / f"{name.lower()}.json"
     save_json({"model": name.lower(), "map_emoticons": map_emoticons, "epochs_max": epochs,
-               "class_weight": class_weight,
+               "class_weight": class_weight, "glove_file": Path(glove_path).name if glove_path else None,
                "validation": val_metrics, "test": test_metrics}, results_path)
     print("Saved results to:", results_path)
     return model, tokenizer, val_metrics, test_metrics
