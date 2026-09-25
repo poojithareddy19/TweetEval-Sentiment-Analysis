@@ -13,16 +13,16 @@ A comprehensive sentiment analysis application supporting multiple deep learning
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10 or 3.11
 - pip or conda package manager
-- Git
+- Git and Git LFS (the model weights are stored with Git LFS)
 
 ### Installation
 
 1. **Clone the repository**:
 ```bash
 git clone https://github.com/poojithareddy19/TweetEval-Sentiment-Analysis.git
-cd Sentiment-Analysis
+cd TweetEval-Sentiment-Analysis
 ```
 
 2. **Create a virtual environment (optional but recommended)**:
@@ -41,6 +41,29 @@ conda activate sentiment-analysis
 pip install -r requirements/inference.txt
 ```
 
+4. **Fetch the model weights with Git LFS**:
+
+The trained models under `models/` are stored with Git LFS. Without LFS a clone only
+contains small pointer files and the app fails with cryptic pickle or safetensors errors.
+
+```bash
+# install Git LFS first: https://git-lfs.com (e.g. apt install git-lfs, brew install git-lfs,
+# or the Windows installer), then:
+git lfs install
+git lfs pull
+```
+
+Check that the files are real binaries and not pointers:
+
+```bash
+git lfs ls-files
+ls -l models/lr/pipeline.joblib models/lstm/model_final.keras models/bert/model.safetensors
+```
+
+Real files are hundreds of KB to hundreds of MB. A pointer is a text file of about 130 bytes
+that starts with `version https://git-lfs.github.com/spec/v1`. The app also detects pointers
+and tells you to run `git lfs pull`.
+
 ### Running the Application
 
 Start the Streamlit app:
@@ -49,6 +72,24 @@ streamlit run app/streamlit_app.py
 ```
 
 The app will be available at `http://localhost:8501`
+
+## Training
+
+The training scripts import from the `src` package, so they must be run from the repository
+root as modules. Running them as plain files (`python src/training/train_lr.py`) fails with
+`ModuleNotFoundError: No module named 'src'`.
+
+```bash
+pip install -r requirements/train.txt
+
+python -m src.training.train_lr      # TF-IDF + Logistic Regression, fast on CPU
+python -m src.training.train_lstm    # BiLSTM, CPU is slow but works
+python -m src.training.train_gru     # BiGRU
+python -m src.training.train_bert    # RoBERTa fine-tuning, needs a GPU in practice
+```
+
+Each script overwrites the model files under `models/<name>/`. BERT checkpoints and
+TensorBoard logs go to `outputs/bert_runs/`, which is gitignored.
 
 ## Usage
 
