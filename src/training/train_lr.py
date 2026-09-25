@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from src.utils.preprocessing import preprocess_tweet
 from src.utils.metrics import compute_metrics
+from src.models.inference import write_inference_config
 
 OUT_DIR = Path("models/lr")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -54,6 +55,10 @@ def main():
     model_path = OUT_DIR / "pipeline.joblib"
     joblib.dump(best, model_path)
     print(f"Saved LR pipeline to: {model_path}")
+
+    write_inference_config(OUT_DIR, preprocessing="tweet", map_emoticons=False,
+                           extra={"best_params": gs.best_params_})
+    print("Saved inference config to:", OUT_DIR / "inference_config.json")
 
 if __name__ == "__main__":
     main()

@@ -14,6 +14,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
+from src.models.inference import write_inference_config
 from src.utils.metrics import compute_metrics
 from src.utils.preprocessing import preprocess_tweet
 
@@ -108,6 +109,10 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
     final_path = out_dir / "model_final.keras"
     model.save(str(final_path))
     print("Saved final model:", final_path)
+
+    write_inference_config(out_dir, preprocessing="tweet", map_emoticons=map_emoticons, max_len=MAX_LEN,
+                           extra={"max_vocab": MAX_VOCAB, "embed_dim": EMBED_DIM})
+    print("Saved inference config to:", out_dir / "inference_config.json")
 
     print("Evaluating...")
     val_preds = np.argmax(model.predict(X_val, batch_size=BATCH), axis=1)
