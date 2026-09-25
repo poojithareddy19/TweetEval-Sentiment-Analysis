@@ -33,6 +33,11 @@ MODEL_DIRS = {
     "BERT": "models/bert",
 }
 model_choice = st.sidebar.selectbox("Select Model", MODEL_CHOICES)
+compare_all = st.sidebar.checkbox(
+    "Compare all models",
+    value=False,
+    help="Run every model whose files are available and show one table.",
+)
 
 
 # -------------------------------------------------
@@ -89,12 +94,35 @@ def predict_proba(model_name, raw_text):
 # Main UI
 # -------------------------------------------------
 
-st.write(f"Using Model: **{model_choice}**")
+st.write("Comparing: **all available models**" if compare_all else f"Using Model: **{model_choice}**")
 text = st.text_area("Enter text to analyze:", height=140)
 
 if st.button("Predict"):
     if not text.strip():
         st.warning("Please enter some text.")
+        st.stop()
+
+    if compare_all:
+        rows = []
+        for name in MODEL_CHOICES:
+            try:
+                probs, cfg = predict_proba(name, text)
+            except Exception as e:  # missing files, LFS pointers, load errors
+                st.info(f"{name} skipped: {e}")
+                continue
+            labels = cfg["labels"]
+            pred_idx = int(np.argmax(probs))
+            row = {
+                "Model": name,
+                "Prediction": labels[pred_idx],
+                "Confidence": round(float(probs[pred_idx]), 3),
+            }
+            row.update({f"P({label})": round(float(p), 3) for label, p in zip(labels, probs)})
+            rows.append(row)
+        if not rows:
+            st.error("No model could be run. Check that the model files exist and are not Git LFS pointers.")
+        else:
+            st.table(rows)
         st.stop()
 
     try:
