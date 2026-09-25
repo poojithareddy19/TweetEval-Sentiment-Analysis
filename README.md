@@ -99,6 +99,30 @@ TensorBoard logs go to `outputs/bert_runs/`, which is gitignored.
 4. Click "Predict" to analyze sentiment
 5. View the sentiment classification and confidence scores
 
+## Results
+
+Metrics come from `results/<model>.json`, written by each training script on the official
+TweetEval test split. Regenerate the table with:
+
+```bash
+python scripts/make_results_table.py
+```
+
+| Model | Accuracy | Macro F1 | Macro Recall |
+|---|---|---|---|
+| run training to populate | - | - | - |
+
+Macro recall is the official TweetEval sentiment metric.
+
+Note on the currently committed BERT model: according to its
+`models/bert/checkpoint-17106/trainer_state.json` it reached 0.789 validation accuracy and
+0.781 validation macro F1 at epoch 1 (the checkpoint that is shipped). Validation loss then
+rose from 0.51 to 0.98 over epochs 2 and 3. That run started from
+`cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task,
+so its numbers are not comparable with the other models. Retraining with `train_bert.py` now
+starts from the task-neutral `cardiffnlp/twitter-roberta-base`. No test-split numbers exist for
+any model until training is rerun.
+
 ## Supported Models
 
 | Model | Type | Framework | File |

@@ -15,6 +15,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
 from src.models.inference import write_inference_config
+from src.utils.io import save_json
 from src.utils.metrics import compute_metrics
 from src.utils.preprocessing import preprocess_tweet
 
@@ -119,6 +120,11 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS):
     test_preds = np.argmax(model.predict(X_test, batch_size=BATCH), axis=1)
     val_metrics = compute_metrics(val_labels, val_preds)
     test_metrics = compute_metrics(test_labels, test_preds)
-    print("Validation metrics:", {k: v for k, v in val_metrics.items() if k in ("accuracy", "f1_macro")})
-    print("Test metrics:", {k: v for k, v in test_metrics.items() if k in ("accuracy", "f1_macro")})
+    summary_keys = ("accuracy", "f1_macro", "recall_macro")
+    print("Validation metrics:", {k: v for k, v in val_metrics.items() if k in summary_keys})
+    print("Test metrics:", {k: v for k, v in test_metrics.items() if k in summary_keys})
+    results_path = Path("results") / f"{name.lower()}.json"
+    save_json({"model": name.lower(), "map_emoticons": map_emoticons, "epochs_max": epochs,
+               "validation": val_metrics, "test": test_metrics}, results_path)
+    print("Saved results to:", results_path)
     return model, tokenizer, val_metrics, test_metrics
