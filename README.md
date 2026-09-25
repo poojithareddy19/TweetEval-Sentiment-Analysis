@@ -110,7 +110,7 @@ python scripts/make_results_table.py
 
 | Model | Accuracy | Macro F1 | Macro Recall |
 |---|---|---|---|
-| run training to populate | - | - | - |
+| TF-IDF + Logistic Regression | 0.5922 | 0.5887 | 0.5987 |
 
 Macro recall is the official TweetEval sentiment metric.
 
