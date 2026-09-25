@@ -10,10 +10,12 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
 from src.models.inference import write_inference_config
+from src.utils.io import save_json
 from src.utils.metrics import compute_metrics
 from src.utils.preprocessing import preprocess_tweet
 
 OUT_DIR = Path("models/lr")
+RESULTS_PATH = Path("results/lr.json")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def ds_to_df(ds, split):
@@ -50,8 +52,13 @@ def main():
     val_preds = best.predict(val_df['text'])
     test_preds = best.predict(test_df['text'])
 
-    print("Validation:", compute_metrics(val_df['label'], val_preds))
-    print("Test:", compute_metrics(test_df['label'], test_preds))
+    val_metrics = compute_metrics(val_df['label'], val_preds)
+    test_metrics = compute_metrics(test_df['label'], test_preds)
+    print("Validation:", {k: v for k, v in val_metrics.items() if k in ("accuracy", "f1_macro", "recall_macro")})
+    print("Test:", {k: v for k, v in test_metrics.items() if k in ("accuracy", "f1_macro", "recall_macro")})
+    save_json({"model": "lr", "best_params": gs.best_params_, "validation": val_metrics, "test": test_metrics},
+              RESULTS_PATH)
+    print("Saved results to:", RESULTS_PATH)
 
     model_path = OUT_DIR / "pipeline.joblib"
     joblib.dump(best, model_path)

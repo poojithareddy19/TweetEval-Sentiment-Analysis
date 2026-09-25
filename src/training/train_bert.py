@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from datasets import load_dataset
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, recall_score
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -15,6 +15,8 @@ from transformers import (
 )
 
 from src.models.inference import write_inference_config
+from src.utils.io import save_json
+from src.utils.metrics import compute_metrics as full_metrics
 from src.utils.preprocessing import preprocess_for_transformer
 
 # Base model. This must be a model that has NOT been fine-tuned on TweetEval
@@ -25,6 +27,7 @@ from src.utils.preprocessing import preprocess_for_transformer
 MODEL_NAME = "cardiffnlp/twitter-roberta-base"
 OUT_DIR = "models/bert"          # final model + tokenizer only
 RUN_DIR = "outputs/bert_runs"    # checkpoints and TensorBoard logs (gitignored)
+RESULTS_PATH = "results/bert.json"
 NUM_LABELS = 3
 ID2LABEL = {0: "negative", 1: "neutral", 2: "positive"}
 LABEL2ID = {v: k for k, v in ID2LABEL.items()}
@@ -57,6 +60,8 @@ def compute_metrics(eval_pred):
     return {
         "accuracy": accuracy_score(labels, preds),
         "f1_macro": f1_score(labels, preds, average="macro"),
+        # Macro recall is the official TweetEval sentiment metric.
+        "recall_macro": recall_score(labels, preds, average="macro"),
     }
 
 def main():
@@ -101,7 +106,7 @@ def main():
         logging_steps=50,
         save_total_limit=2,
         load_best_model_at_end=True,
-        metric_for_best_model="f1_macro",
+        metric_for_best_model="recall_macro",
         greater_is_better=True,
         fp16=FP16,
         seed=SEED,
@@ -122,9 +127,16 @@ def main():
     print("Starting training...")
     trainer.train()
 
-    print("Evaluating on test set...")
-    metrics = trainer.evaluate(eval_dataset=tokenized["test"])
-    print("Test metrics:", metrics)
+    print("Evaluating on validation and test sets...")
+    results = {"model": "bert", "base_model": MODEL_NAME}
+    for split in ("validation", "test"):
+        out = trainer.predict(tokenized[split])
+        preds = np.argmax(out.predictions, axis=-1)
+        results[split] = full_metrics(out.label_ids, preds)
+        summary = {k: v for k, v in results[split].items() if k in ("accuracy", "f1_macro", "recall_macro")}
+        print(f"{split} metrics:", summary)
+    save_json(results, RESULTS_PATH)
+    print("Saved results to", RESULTS_PATH)
 
     print("Saving model & tokenizer to", OUT_DIR)
     trainer.save_model(OUT_DIR)
