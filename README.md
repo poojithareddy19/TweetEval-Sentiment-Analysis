@@ -111,8 +111,13 @@ python scripts/make_results_table.py
 | Model | Accuracy | Macro F1 | Macro Recall |
 |---|---|---|---|
 | TF-IDF + Logistic Regression | 0.5922 | 0.5887 | 0.5987 |
+| BiLSTM | 0.5785 | 0.5726 | 0.5841 |
+| BiGRU | 0.5693 | 0.5641 | 0.5799 |
 
-Macro recall is the official TweetEval sentiment metric.
+Macro recall is the official TweetEval sentiment metric. The BiLSTM and BiGRU rows come from
+`python -m src.training.train_lstm --map-emoticons` and the GRU equivalent (10 epochs max,
+early stopping patience 2, balanced class weights, both stopped after epoch 4 with epoch 2
+restored). No RoBERTa row exists yet because retraining from the task-neutral base needs a GPU.
 
 Note on the currently committed BERT model: according to its
 `results/bert_trainer_state_2025-12-05.json` (the Trainer log preserved from the original run) it reached 0.789 validation accuracy and
