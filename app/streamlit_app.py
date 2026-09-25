@@ -19,7 +19,7 @@ from src.models.bert_wrapper import BertWrapper
 # Streamlit Layout
 # -------------------------------------------------
 st.set_page_config(page_title="Sentiment Analysis", layout="centered")
-st.title("Sentiment Analysis — LR, LSTM, GRU, BERT")
+st.title("Sentiment Analysis - LR, LSTM, GRU, BERT")
 
 MODEL_CHOICES = ["LogisticRegression", "LSTM", "GRU", "BERT"]
 model_choice = st.sidebar.selectbox("Select Model", MODEL_CHOICES)

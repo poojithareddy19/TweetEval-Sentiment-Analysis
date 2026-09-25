@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific
+# Training run artifacts (checkpoints, TensorBoard logs)
+outputs/
+models/bert/checkpoint-*/
+models/bert/runs/
+models/bert/training_args.bin
