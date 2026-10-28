@@ -43,6 +43,11 @@ def parse_args(name):
         "recorded in inference_config.json so the app applies the same preprocessing.",
     )
     parser.add_argument("--epochs", type=int, default=EPOCHS)
+    parser.add_argument(
+        "--no-class-weight",
+        action="store_true",
+        help="Train without balanced class weights (ablation). Recorded in the results JSON.",
+    )
     parser.add_argument("--out-dir", default=None, help="Override the model output directory (smoke runs).")
     parser.add_argument("--results-path", default=None, help="Override the metrics JSON path (smoke runs).")
     parser.add_argument("--subset", type=int, default=None,
@@ -98,7 +103,7 @@ def make_sequences(tokenizer, texts, max_len=MAX_LEN):
 
 
 def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove_path=None,
-              results_path=None, subset=None):
+              results_path=None, subset=None, use_class_weight=True):
     """Train a Keras RNN classifier and save tokenizer, best and final weights to out_dir."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -130,9 +135,13 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove
     y_val = tf.keras.utils.to_categorical(val_labels, NUM_CLASSES)
 
     # Balanced class weights: TweetEval sentiment is skewed towards neutral.
-    class_weights = compute_class_weight("balanced", classes=np.arange(NUM_CLASSES), y=train_labels)
-    class_weight = {int(i): float(w) for i, w in enumerate(class_weights)}
-    print("Class weights (balanced):", class_weight)
+    if use_class_weight:
+        class_weights = compute_class_weight("balanced", classes=np.arange(NUM_CLASSES), y=train_labels)
+        class_weight = {int(i): float(w) for i, w in enumerate(class_weights)}
+        print("Class weights (balanced):", class_weight)
+    else:
+        class_weight = None
+        print("Class weights: disabled (--no-class-weight)")
 
     vocab_size = min(MAX_VOCAB, len(tokenizer.word_index) + 1)
     print(f"Building {name} (vocab={vocab_size}, embed={EMBED_DIM}, max_len={MAX_LEN})")
@@ -177,7 +186,8 @@ def train_rnn(build_fn, out_dir, name, map_emoticons=False, epochs=EPOCHS, glove
     print("Test metrics:", {k: v for k, v in test_metrics.items() if k in summary_keys})
     results_path = Path(results_path) if results_path else Path("results") / f"{name.lower()}.json"
     save_json({"model": name.lower(), "map_emoticons": map_emoticons, "epochs_max": epochs, "subset": subset,
-               "class_weight": class_weight, "glove_file": Path(glove_path).name if glove_path else None,
+               "use_class_weight": use_class_weight, "class_weight": class_weight,
+               "glove_file": Path(glove_path).name if glove_path else None,
                "validation": val_metrics, "test": test_metrics}, results_path)
     print("Saved results to:", results_path)
     return model, tokenizer, val_metrics, test_metrics

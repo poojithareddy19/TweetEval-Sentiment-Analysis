@@ -9,7 +9,7 @@ def main():
     train_rnn(
         build_gru, args.out_dir or OUT_DIR, "GRU",
         map_emoticons=args.map_emoticons, epochs=args.epochs, glove_path=args.glove_path,
-        results_path=args.results_path, subset=args.subset,
+        results_path=args.results_path, subset=args.subset, use_class_weight=not args.no_class_weight,
     )
 
 
