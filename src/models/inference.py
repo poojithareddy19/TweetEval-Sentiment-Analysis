@@ -10,6 +10,8 @@ import platform
 from importlib import metadata
 from pathlib import Path
 
+import numpy as np
+
 from src.utils.io import check_not_lfs_pointer, load_json, save_json
 from src.utils.preprocessing import preprocess_for_transformer, preprocess_tweet
 
@@ -100,15 +102,28 @@ def load_keras_model(model_dir):
     return joblib.load(tok_path), load_model(str(model_path))
 
 
-def keras_predict_proba(tokenizer, model, cleaned_text, cfg):
-    """Tokenise, pad to cfg['max_len'] and return the softmax vector for one input."""
+def keras_sequences(tokenizer, cleaned_texts, cfg):
+    """Tokenise and post-pad/truncate to cfg['max_len'], exactly as at training time."""
     from tensorflow.keras.preprocessing.sequence import pad_sequences
 
     max_len = int(cfg.get("max_len") or LEGACY_CONFIG["max_len"])
-    seq = tokenizer.texts_to_sequences([cleaned_text])
-    seq = pad_sequences(seq, maxlen=max_len, padding="post", truncating="post")
+    seq = tokenizer.texts_to_sequences(list(cleaned_texts))
+    return pad_sequences(seq, maxlen=max_len, padding="post", truncating="post")
+
+
+def keras_predict_proba(tokenizer, model, cleaned_text, cfg):
+    """Tokenise, pad to cfg['max_len'] and return the softmax vector for one input."""
+    seq = keras_sequences(tokenizer, [cleaned_text], cfg)
     # Direct call instead of model.predict(): no tf.function tracing overhead for single inputs.
     return model(seq, training=False).numpy()[0]
+
+
+def keras_predict_proba_batch(tokenizer, model, cleaned_texts, cfg, batch_size=64):
+    """Softmax vectors for many inputs, using model.predict() like the training scripts' evaluation."""
+    if len(cleaned_texts) == 0:
+        return np.zeros((0, len(cfg.get("labels") or LABELS)))
+    seq = keras_sequences(tokenizer, cleaned_texts, cfg)
+    return model.predict(seq, batch_size=batch_size, verbose=0)
 
 
 def load_lr_pipeline(model_dir):

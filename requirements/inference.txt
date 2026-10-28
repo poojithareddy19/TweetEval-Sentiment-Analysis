@@ -9,4 +9,8 @@ numpy==2.3.4
 joblib==1.5.2
 emoji==2.15.0
 streamlit==1.51.0
+# Transitive dependency of transformers, pinned for reproducibility.
 pyyaml==6.0.3
+# Needed to unpickle models/lstm and models/gru tokenizer.joblib: they reference
+# dill._dill._load_type because datasets (which imports dill) was loaded when they were saved.
+dill==0.4.0

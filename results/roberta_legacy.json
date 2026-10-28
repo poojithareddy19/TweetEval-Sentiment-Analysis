@@ -1,0 +1,130 @@
+{
+  "model": "roberta",
+  "model_path": "models/roberta/model.safetensors",
+  "config_source": "models/roberta/inference_config.json",
+  "evaluated_with": "scripts/evaluate_models.py",
+  "subset": null,
+  "validation": {
+    "accuracy": 0.789,
+    "f1_macro": 0.7805747389723933,
+    "recall_macro": 0.7823838140293837,
+    "f1_per_class": [
+      0.7433070866141732,
+      0.7690570299265952,
+      0.8293601003764115
+    ],
+    "confusion_matrix": [
+      [
+        236,
+        75,
+        1
+      ],
+      [
+        75,
+        681,
+        113
+      ],
+      [
+        12,
+        146,
+        661
+      ]
+    ],
+    "classification_report": {
+      "negative": {
+        "precision": 0.7306501547987616,
+        "recall": 0.7564102564102564,
+        "f1-score": 0.7433070866141732,
+        "support": 312.0
+      },
+      "neutral": {
+        "precision": 0.7549889135254989,
+        "recall": 0.7836593785960875,
+        "f1-score": 0.7690570299265952,
+        "support": 869.0
+      },
+      "positive": {
+        "precision": 0.8529032258064516,
+        "recall": 0.8070818070818071,
+        "f1-score": 0.8293601003764115,
+        "support": 819.0
+      },
+      "accuracy": 0.789,
+      "macro avg": {
+        "precision": 0.7795140980435707,
+        "recall": 0.7823838140293837,
+        "f1-score": 0.7805747389723933,
+        "support": 2000.0
+      },
+      "weighted avg": {
+        "precision": 0.791287978043178,
+        "recall": 0.789,
+        "f1-score": 0.7897341461190572,
+        "support": 2000.0
+      }
+    }
+  },
+  "test": {
+    "accuracy": 0.7141810485183979,
+    "f1_macro": 0.7131322938478931,
+    "recall_macro": 0.7179291927083103,
+    "f1_per_class": [
+      0.740935605627359,
+      0.6996346787846387,
+      0.6988265971316818
+    ],
+    "confusion_matrix": [
+      [
+        3239,
+        683,
+        50
+      ],
+      [
+        1442,
+        3926,
+        569
+      ],
+      [
+        90,
+        677,
+        1608
+      ]
+    ],
+    "classification_report": {
+      "negative": {
+        "precision": 0.678893313770698,
+        "recall": 0.8154582074521651,
+        "f1-score": 0.740935605627359,
+        "support": 3972.0
+      },
+      "neutral": {
+        "precision": 0.7427166099129777,
+        "recall": 0.6612767390938185,
+        "f1-score": 0.6996346787846387,
+        "support": 5937.0
+      },
+      "positive": {
+        "precision": 0.7220475976650202,
+        "recall": 0.6770526315789474,
+        "f1-score": 0.6988265971316818,
+        "support": 2375.0
+      },
+      "accuracy": 0.7141810485183979,
+      "macro avg": {
+        "precision": 0.714552507116232,
+        "recall": 0.7179291927083103,
+        "f1-score": 0.7131322938478931,
+        "support": 12284.0
+      },
+      "weighted avg": {
+        "precision": 0.7180833441716854,
+        "recall": 0.7141810485183979,
+        "f1-score": 0.712832992647673,
+        "support": 12284.0
+      }
+    }
+  },
+  "tag": "legacy",
+  "comparable": false,
+  "base_model": "cardiffnlp/twitter-roberta-base-sentiment"
+}

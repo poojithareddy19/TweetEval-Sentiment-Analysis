@@ -2,7 +2,11 @@
 
 Skipped when the model files are missing or are unresolved Git LFS pointers,
 so the suite still passes in CI where the weights are not checked out.
+Set REQUIRE_MODELS=1 to turn every skip into a failure instead (used by the
+models workflow, which checks out the weights).
 """
+import importlib
+import os
 from pathlib import Path
 
 import numpy as np
@@ -13,14 +17,30 @@ from src.utils.io import is_lfs_pointer
 REPO = Path(__file__).resolve().parent.parent
 MODELS = REPO / "models"
 SENTENCE = "I love this so much :)"
+STRICT = os.environ.get("REQUIRE_MODELS") == "1"
+
+
+def _skip(reason):
+    if STRICT:
+        pytest.fail(f"REQUIRE_MODELS=1: {reason}")
+    pytest.skip(reason)
+
+
+def _importorskip(name):
+    if STRICT:
+        try:
+            return importlib.import_module(name)
+        except ImportError as exc:
+            pytest.fail(f"REQUIRE_MODELS=1: could not import {name}: {exc}")
+    return pytest.importorskip(name)
 
 
 def _require(*paths):
     for p in paths:
         if not p.exists():
-            pytest.skip(f"{p.relative_to(REPO)} not found")
+            _skip(f"{p.relative_to(REPO)} not found")
         if is_lfs_pointer(p):
-            pytest.skip(f"{p.relative_to(REPO)} is a Git LFS pointer, run `git lfs pull`")
+            _skip(f"{p.relative_to(REPO)} is a Git LFS pointer, run `git lfs pull`")
 
 
 def _check_probs(probs):
@@ -42,7 +62,7 @@ def test_lr_predicts():
 
 @pytest.mark.parametrize("name", ["lstm", "gru"])
 def test_keras_rnn_predicts(name):
-    pytest.importorskip("tensorflow")
+    _importorskip("tensorflow")
     from src.models.inference import (
         find_keras_model_path,
         keras_predict_proba,
@@ -54,7 +74,7 @@ def test_keras_rnn_predicts(name):
     model_dir = MODELS / name
     model_path = find_keras_model_path(model_dir)
     if model_path is None:
-        pytest.skip(f"no .keras file in models/{name}/")
+        _skip(f"no .keras file in models/{name}/")
     _require(model_dir / "tokenizer.joblib", model_path)
 
     cfg = load_inference_config(model_dir)
@@ -64,8 +84,8 @@ def test_keras_rnn_predicts(name):
 
 
 def test_roberta_predicts():
-    pytest.importorskip("torch")
-    pytest.importorskip("transformers")
+    _importorskip("torch")
+    _importorskip("transformers")
     _require(MODELS / "roberta" / "model.safetensors", MODELS / "roberta" / "config.json")
     from src.models.inference import load_inference_config, preprocess_for_model
     from src.models.roberta_wrapper import RobertaWrapper
