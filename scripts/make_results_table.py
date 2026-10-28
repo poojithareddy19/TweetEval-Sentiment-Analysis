@@ -15,8 +15,9 @@ DISPLAY_NAMES = {
     "lstm": "BiLSTM",
     "gru": "BiGRU",
     "roberta": "RoBERTa (fine-tuned)",
+    "roberta_legacy": "RoBERTa (legacy, task-tuned base, not comparable)",
 }
-ORDER = ["lr", "lstm", "gru", "roberta"]
+ORDER = ["lr", "lstm", "gru", "roberta", "roberta_legacy"]
 
 
 def build_table(results_dir=RESULTS_DIR, split="test"):
