@@ -9,4 +9,5 @@ numpy==2.3.4
 joblib==1.5.2
 emoji==2.15.0
 streamlit==1.51.0
+# Transitive dependency of transformers, pinned for reproducibility.
 pyyaml==6.0.3
