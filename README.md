@@ -1,13 +1,14 @@
 # Sentiment-Analysis
 
-A comprehensive sentiment analysis application supporting multiple deep learning models including Logistic Regression, LSTM, GRU, and RoBERTa.
+A comprehensive sentiment analysis application supporting a classical baseline and deep learning models: Logistic Regression, LSTM, GRU, and RoBERTa.
 
 ## Features
 
 - **Multiple Models**: Choose between LogisticRegression, LSTM, GRU, and RoBERTa for sentiment classification
-- **Pre-trained Models**: All models come pre-trained and ready to use
+- **Pre-trained Models**: All models come pre-trained and ready to use after `git lfs pull`
 - **Easy-to-use Interface**: Streamlit-based web UI for text sentiment analysis
-- **Fast Inference**: Optimized for quick predictions
+- **Model Caching**: Each model is loaded once and cached for later predictions
+- **Lazy PyTorch Import**: PyTorch and transformers are only imported when RoBERTa is used
 
 ## Setup Instructions
 
@@ -71,7 +72,20 @@ Start the Streamlit app:
 streamlit run app/streamlit_app.py
 ```
 
+Alternatively, run `python run_app.py` from the repository root, which launches the same app.
+
 The app will be available at `http://localhost:8501`
+
+## Running tests
+
+```bash
+pip install -r requirements/dev.txt
+pytest
+ruff check .
+```
+
+The model smoke tests in `tests/test_models_smoke.py` are skipped when the weights are missing
+or are Git LFS pointers.
 
 ## Training
 
@@ -125,8 +139,9 @@ Note on the currently committed RoBERTa model: according to its
 rose from 0.51 to 0.98 over epochs 2 and 3. That run started from
 `cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task,
 so its numbers are not comparable with the other models. Retraining with `train_roberta.py` now
-starts from the task-neutral `cardiffnlp/twitter-roberta-base`. No test-split numbers exist for
-any model until training is rerun.
+starts from the task-neutral `cardiffnlp/twitter-roberta-base`. Test-split numbers exist for
+Logistic Regression, BiLSTM and BiGRU (table above); the committed RoBERTa model has no
+comparable test result.
 
 ## Supported Models
 
@@ -140,7 +155,9 @@ any model until training is rerun.
 ## Project Structure
 
 ```
-Sentiment-Analysis/
+TweetEval-Sentiment-Analysis/
+├── .github/
+│   └── workflows/                 # CI (tests.yml)
 ├── app/
 │   └── streamlit_app.py          # Main Streamlit application
 ├── models/
@@ -152,9 +169,16 @@ Sentiment-Analysis/
 │   ├── models/                    # Model wrappers
 │   ├── training/                  # Training scripts
 │   └── utils/                     # Utility functions
-└── requirements/
-    ├── inference.txt              # Production dependencies
-    └── train.txt                  # Training dependencies
+├── results/                       # Metrics JSON written by the training scripts
+├── scripts/
+│   └── make_results_table.py      # Builds the README results table
+├── tests/                         # pytest suite
+├── requirements/
+│   ├── inference.txt              # Production dependencies
+│   ├── train.txt                  # Training dependencies
+│   └── dev.txt                    # Test and lint dependencies
+├── pyproject.toml                 # pytest and ruff configuration
+└── run_app.py                     # Launches the Streamlit app from the repo root
 ```
 
 ## Dependencies
@@ -169,7 +193,7 @@ Main dependencies for inference:
 
 ## Notes
 
-- All models are pre-trained and ready for inference
+- All models are pre-trained and ready for inference after `git lfs pull`
 - No training data is required to run the application
 - The app preprocesses input text automatically, following each model's `inference_config.json`
   (legacy defaults when the file is missing)
