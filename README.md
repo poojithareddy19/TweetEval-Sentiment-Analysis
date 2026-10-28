@@ -115,8 +115,9 @@ TensorBoard logs go to `outputs/roberta_runs/`, which is gitignored.
 
 ## Results
 
-Metrics come from `results/<model>.json`, written by each training script on the official
-TweetEval test split. Regenerate the table with:
+Metrics come from `results/<model>.json` on the official TweetEval test split, written by each
+training script (or, for the legacy RoBERTa row, by `scripts/evaluate_models.py`). Regenerate the
+table with:
 
 ```bash
 python scripts/make_results_table.py
@@ -127,11 +128,13 @@ python scripts/make_results_table.py
 | TF-IDF + Logistic Regression | 0.5922 | 0.5887 | 0.5987 |
 | BiLSTM | 0.5785 | 0.5726 | 0.5841 |
 | BiGRU | 0.5693 | 0.5641 | 0.5799 |
+| RoBERTa (legacy, task-tuned base, not comparable) | 0.7142 | 0.7131 | 0.7179 |
 
 Macro recall is the official TweetEval sentiment metric. The BiLSTM and BiGRU rows come from
 `python -m src.training.train_lstm --map-emoticons` and the GRU equivalent (10 epochs max,
 early stopping patience 2, balanced class weights, both stopped after epoch 4 with epoch 2
-restored). No RoBERTa row exists yet because retraining from the task-neutral base needs a GPU.
+restored). No comparable RoBERTa row exists yet because retraining from the task-neutral base
+needs a GPU. The last row is the committed legacy RoBERTa model (see below).
 
 Note on the currently committed RoBERTa model: according to its
 `results/roberta_trainer_state_2025-12-05.json` (the Trainer log preserved from the original run) it reached 0.789 validation accuracy and
@@ -139,9 +142,10 @@ Note on the currently committed RoBERTa model: according to its
 rose from 0.51 to 0.98 over epochs 2 and 3. That run started from
 `cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task,
 so its numbers are not comparable with the other models. Retraining with `train_roberta.py` now
-starts from the task-neutral `cardiffnlp/twitter-roberta-base`. Test-split numbers exist for
-Logistic Regression, BiLSTM and BiGRU (table above); the committed RoBERTa model has no
-comparable test result.
+starts from the task-neutral `cardiffnlp/twitter-roberta-base`. The committed model's test-split
+numbers (last table row, `results/roberta_legacy.json`, produced with
+`python scripts/evaluate_models.py --models roberta --out-dir results --tag legacy ...`) are
+shown for reference only and are not comparable with the other rows.
 
 ## Supported Models
 
