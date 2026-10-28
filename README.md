@@ -7,6 +7,7 @@ A comprehensive sentiment analysis application supporting a classical baseline a
 - **Multiple Models**: Choose between LogisticRegression, LSTM, GRU, and RoBERTa for sentiment classification
 - **Pre-trained Models**: All models come pre-trained and ready to use after `git lfs pull`
 - **Easy-to-use Interface**: Streamlit-based web UI for text sentiment analysis
+- **Batch CSV Mode**: Predict a column of an uploaded CSV file and download the results
 - **Model Caching**: Each model is loaded once and cached for later predictions
 - **Lazy PyTorch Import**: PyTorch and transformers are only imported when RoBERTa is used
 
@@ -76,6 +77,28 @@ Alternatively, run `python run_app.py` from the repository root, which launches 
 
 The app will be available at `http://localhost:8501`
 
+### Docker
+
+The `Dockerfile` runs the Streamlit app with all four models, for local use. Fetch the weights
+with `git lfs pull` first: the build stops with a list of files if any model file is still an
+LFS pointer (`scripts/check_lfs_pointers.py`).
+
+```bash
+docker build -t tweeteval-sentiment .
+docker run --rm -p 8501:8501 tweeteval-sentiment
+```
+
+The app is then at `http://localhost:8501`, and `http://localhost:8501/_stcore/health` returns
+`ok` (the container's `HEALTHCHECK` uses it). PyTorch is installed from the CPU-only index at
+the version pinned in `requirements/inference.txt`, so the container does not use a GPU. The
+image is about 6 GB, mostly TensorFlow, PyTorch and the 550 MB of model files.
+
+### Batch predictions
+
+In the sidebar, set **Mode** to **Batch CSV**, upload a CSV file and choose the text column. The
+selected model predicts every row (up to the first 1,000) and the results can be downloaded as a
+CSV with `prediction`, `confidence` and one `prob_<label>` column per class.
+
 ## Running tests
 
 ```bash
@@ -85,7 +108,8 @@ ruff check .
 ```
 
 The model smoke tests in `tests/test_models_smoke.py` are skipped when the weights are missing
-or are Git LFS pointers.
+or are Git LFS pointers. Set `REQUIRE_MODELS=1` to make them fail instead, as the manual
+`models` GitHub workflow does.
 
 ## Training
 
@@ -161,7 +185,7 @@ shown for reference only and are not comparable with the other rows.
 ```
 TweetEval-Sentiment-Analysis/
 ├── .github/
-│   └── workflows/                 # CI (tests.yml)
+│   └── workflows/                 # CI (tests.yml) and manual real-model run (models.yml)
 ├── app/
 │   └── streamlit_app.py          # Main Streamlit application
 ├── models/
@@ -175,12 +199,15 @@ TweetEval-Sentiment-Analysis/
 │   └── utils/                     # Utility functions
 ├── results/                       # Metrics JSON written by the training scripts
 ├── scripts/
+│   ├── check_lfs_pointers.py      # Fails if a model file is a Git LFS pointer
+│   ├── evaluate_models.py         # Evaluates the committed models on TweetEval
 │   └── make_results_table.py      # Builds the README results table
 ├── tests/                         # pytest suite
 ├── requirements/
 │   ├── inference.txt              # Production dependencies
 │   ├── train.txt                  # Training dependencies
 │   └── dev.txt                    # Test and lint dependencies
+├── Dockerfile                     # Container for running the app locally
 ├── pyproject.toml                 # pytest and ruff configuration
 └── run_app.py                     # Launches the Streamlit app from the repo root
 ```
