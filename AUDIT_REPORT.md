@@ -555,7 +555,7 @@ Command output is saved under `outputs/audit/phase6_*.txt` (gitignored).
 | 7 | Heavy runtime dependencies | Container with CPU-only torch; missing `dill` added | `Dockerfile`, `.dockerignore`, `requirements/inference.txt`, `README.md` | Image 6.24 GB, no `nvidia-*` packages; 66 tests pass in the image with inference deps only | Partially fixed: packaged and documented, footprint itself unchanged (TensorFlow 1.8 GB, torch 0.7 GB) |
 | 8 | CI does not exercise real models or training | `REQUIRE_MODELS=1` strict mode; manual `models.yml` (inference deps only for tests, then LR training smoke) | `tests/test_models_smoke.py`, `.github/workflows/models.yml`, `scripts/check_lfs_pointers.py` | No-LFS clone: 4 skipped by default, 4 failed with `REQUIRE_MODELS=1`; all workflow steps pass locally | Partially fixed: the workflow has not run on GitHub yet (needs a push) |
 | 9 | Training scope limited to TweetEval | None | none | Documented only, per plan | Deferred: out of scope for this branch |
-| 10 | pyyaml pin and unused `split.py` | pyyaml pin explained | `requirements/inference.txt` | `pip show pyyaml`: required by transformers (`pyyaml>=5.1`), accelerate, datasets, huggingface_hub | Partially fixed: `src/models/split.py` is still present and unused (no imports anywhere); removing it is a file deletion that needs approval |
+| 10 | pyyaml pin and unused `split.py` | pyyaml pin explained; `split.py` removed after approval (follow-up) | `requirements/inference.txt`, `src/models/split.py` | `pip show pyyaml`: required by transformers (`pyyaml>=5.1`), accelerate, datasets, huggingface_hub; no imports of `split.py` before removal; tests pass after | Fixed |
 | 11 | README discrepancies (5 items) | All 5 corrected, plus tests, Docker and batch sections | `README.md` | Phase 1 diff; check 12 | Fixed |
 | 12 | `make_results_table.py` untested | 7 tests | `tests/test_results_table.py` | Pass in full and lightweight environments | Fixed |
 | 13 | No deployment configuration | Dockerfile with LFS pointer check and health check | `Dockerfile`, `.dockerignore`, `scripts/check_lfs_pointers.py`, `README.md` | Build OK; `/_stcore/health` 200 ok, healthy, all 4 models equal baseline in the container; nothing pushed | Fixed (local only) |
@@ -563,3 +563,17 @@ Command output is saved under `outputs/audit/phase6_*.txt` (gitignored).
 Additional finding, fixed: `requirements/inference.txt` could not load the LSTM and GRU models
 because the tokenizer pickles need `dill` (Phase 4). Fixed by pinning `dill==0.4.0`, guarded by
 the inference-only test step in `models.yml`.
+
+## Follow-up after merge
+
+After PR 3 was merged, on branch `docs/documentation-and-cleanup` from `main` at `c5a6984`:
+
+- `src/models/split.py` removed (approved). `grep` found no imports or references outside this
+  report; `pytest -q` 66 passed and `ruff check .` clean afterwards.
+- `docs/DOCUMENTATION.md` created (approved; plan item 1.5): overview, data, models, results,
+  limitations, future enhancements, testing, deployment and an appendix that explains the
+  `pyyaml` and `dill` pins. Split sizes and label counts come from `load_dataset`.
+- `python outputs/audit/check_readme_numbers.py` (now checks results tables against the test or
+  validation split and the per-class table against recall and confusion matrix cell [1][0]):
+  README test table and the docs test, validation and per-class tables all match `results/*.json`;
+  `make_results_table.py` output (test and validation) appears verbatim in the docs. `ALL MATCH`.
