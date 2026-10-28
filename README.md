@@ -188,6 +188,8 @@ TweetEval-Sentiment-Analysis/
 │   └── workflows/                 # CI (tests.yml) and manual real-model run (models.yml)
 ├── app/
 │   └── streamlit_app.py          # Main Streamlit application
+├── docs/
+│   └── DOCUMENTATION.md           # Results, limitations, testing and deployment details
 ├── models/
 │   ├── roberta/                   # Fine-tuned RoBERTa model
 │   ├── gru/                       # Pre-trained GRU model
@@ -229,6 +231,11 @@ Main dependencies for inference:
 - The app preprocesses input text automatically, following each model's `inference_config.json`
   (legacy defaults when the file is missing)
 - Sentiment classes: Negative, Neutral, Positive
+
+## Documentation
+
+See `docs/DOCUMENTATION.md` for data statistics, per-class results, limitations, testing and
+deployment details, and `AUDIT_REPORT.md` for the evidence behind the current results.
 
 ## License
 
