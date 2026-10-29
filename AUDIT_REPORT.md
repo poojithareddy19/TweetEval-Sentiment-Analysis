@@ -550,10 +550,10 @@ Command output is saved under `outputs/audit/phase6_*.txt` (gitignored).
 | 2 | RoBERTa has no inference config; generic labels | Explicit `inference_config.json` with legacy preprocessing; `id2label` / `label2id` renamed | `models/roberta/inference_config.json`, `models/roberta/config.json`, `tests/test_inference_config.py` | Git history (`59dc788`, `2f33e2b`); 12 new tests; `AutoConfig` returns `negative/neutral/positive`; predictions max_abs_diff 0 | Fixed |
 | 3 | Validation-to-test drop, modest scores | Reproduced exactly; class-weight ablation run | `results/eval/*.json`, `src/training/rnn_common.py` | Re-evaluation diff 0 for LR, BiLSTM, BiGRU; ablation table in Phase 5 | Deferred: confirmed as real, no experiment improved the official metric, GloVe (5.2) skipped |
 | 4 | RNN neutral-to-negative confusion | `--no-class-weight` ablation | `src/training/rnn_common.py`, `train_lstm.py`, `train_gru.py` | Test neutral-to-negative 42.6% with weights, 20.4% without; negative-to-neutral 17.8% to 39.5%; macro recall 0.5810 vs 0.5841 | Deferred: cause confirmed, but removing the weights moves the error and does not improve macro recall, so no promotion |
-| 5 | No RNN hyperparameter search; GloVe unused | None | none | 5.2 not run | Deferred: GloVe needs a 1.4 GB download, skipped at Checkpoint 5; no search run |
+| 5 | No RNN hyperparameter search; GloVe unused | None | none | 5.2 not run | Deferred: GloVe experiment declined by the user (needs a 1.4 GB download); no search run |
 | 6 | Single-text interface only | Batch CSV mode with download, 1,000-row cap | `src/models/batch.py`, `app/streamlit_app.py`, `tests/test_batch.py`, `README.md` | 9 tests; browser check: batch confidences equal baseline, cap warning, GRU batch on 1,000 rows | Fixed |
 | 7 | Heavy runtime dependencies | Container with CPU-only torch; missing `dill` added | `Dockerfile`, `.dockerignore`, `requirements/inference.txt`, `README.md` | Image 6.24 GB, no `nvidia-*` packages; 66 tests pass in the image with inference deps only | Partially fixed: packaged and documented, footprint itself unchanged (TensorFlow 1.8 GB, torch 0.7 GB) |
-| 8 | CI does not exercise real models or training | `REQUIRE_MODELS=1` strict mode; manual `models.yml` (inference deps only for tests, then LR training smoke) | `tests/test_models_smoke.py`, `.github/workflows/models.yml`, `scripts/check_lfs_pointers.py` | No-LFS clone: 4 skipped by default, 4 failed with `REQUIRE_MODELS=1`; all workflow steps pass locally | Partially fixed: the workflow has not run on GitHub yet (needs a push) |
+| 8 | CI does not exercise real models or training | `REQUIRE_MODELS=1` strict mode; manual `models.yml` (inference deps only for tests, then LR training smoke) | `tests/test_models_smoke.py`, `.github/workflows/models.yml`, `scripts/check_lfs_pointers.py` | No-LFS clone: 4 skipped by default, 4 failed with `REQUIRE_MODELS=1`; workflow run 40852197359 on `main` (`b89c6ff`) passed every step | Fixed |
 | 9 | Training scope limited to TweetEval | None | none | Documented only, per plan | Deferred: out of scope for this branch |
 | 10 | pyyaml pin and unused `split.py` | pyyaml pin explained; `split.py` removed after approval (follow-up) | `requirements/inference.txt`, `src/models/split.py` | `pip show pyyaml`: required by transformers (`pyyaml>=5.1`), accelerate, datasets, huggingface_hub; no imports of `split.py` before removal; tests pass after | Fixed |
 | 11 | README discrepancies (5 items) | All 5 corrected, plus tests, Docker and batch sections | `README.md` | Phase 1 diff; check 12 | Fixed |
@@ -577,3 +577,28 @@ After PR 3 was merged, on branch `docs/documentation-and-cleanup` from `main` at
   validation split and the per-class table against recall and confusion matrix cell [1][0]):
   README test table and the docs test, validation and per-class tables all match `results/*.json`;
   `make_results_table.py` output (test and validation) appears verbatim in the docs. `ALL MATCH`.
+
+## Models workflow run
+
+The manual `models` workflow was started from the Actions tab on 2026-10-29 (run 40852197359,
+`workflow_dispatch` on `main` at `b89c6ff`, 09:45:59 to 09:49:52 UTC). Job and step results read
+from the GitHub REST API (`/actions/runs/40852197359/jobs`); job logs need authentication and were
+not read, so exact test counts are not recorded here.
+
+| Step | Conclusion |
+|---|---|
+| Run actions/checkout@v4 (with LFS) | success |
+| Run actions/setup-python@v5 | success |
+| Install inference and test dependencies | success |
+| Check that no LFS pointer files remain under models/ | success |
+| Run tests with real models required | success |
+| Install training dependencies | success |
+| Training smoke test (writes outside the repository) | success |
+
+The test step runs with `REQUIRE_MODELS=1` and only the inference dependencies, so all four
+models loaded on the GitHub runner without packages from `requirements/train.txt`. Gap 8 is now
+Fixed.
+
+The GloVe experiment (5.2) was declined by the user on 2026-10-29 and will not be run; gap 5
+stays Deferred. The comparable RoBERTa retrain (5.3) remains deferred (needs a GPU with more
+memory and CUDA PyTorch).
