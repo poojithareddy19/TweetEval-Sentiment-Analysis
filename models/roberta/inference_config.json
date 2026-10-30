@@ -1,5 +1,5 @@
 {
-  "preprocessing": "tweet",
+  "preprocessing": "transformer",
   "map_emoticons": false,
   "max_len": 128,
   "labels": [
@@ -8,8 +8,15 @@
     "positive"
   ],
   "versions": {
+    "python": "3.11.9",
+    "numpy": "2.3.4",
+    "scikit-learn": "1.7.2",
+    "joblib": "1.5.2",
+    "emoji": "2.15.0",
+    "tensorflow": "2.20.0",
+    "keras": "3.12.0",
+    "torch": "2.9.0",
     "transformers": "4.57.3"
   },
-  "base_model": "cardiffnlp/twitter-roberta-base-sentiment",
-  "provenance": "Legacy run, Trainer log results/roberta_trainer_state_2025-12-05.json. Base model was already fine-tuned on TweetEval sentiment, so metrics are not comparable with LR, LSTM and GRU. Trained with preprocess_tweet defaults."
+  "base_model": "cardiffnlp/twitter-roberta-base"
 }

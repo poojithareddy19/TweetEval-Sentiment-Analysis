@@ -1,15 +1,15 @@
 """The committed RoBERTa model must keep the preprocessing it was trained with.
 
-Its inference_config.json records preprocess_tweet with default arguments,
-the same as the legacy fallback. These tests read only the JSON file, so
-they run without torch or the LFS weights.
+It was fine-tuned by src/training/train_roberta.py, which records the
+transformer preprocessing (preprocess_for_transformer) in inference_config.json.
+These tests read only the JSON file, so they run without torch or the LFS weights.
 """
 from pathlib import Path
 
 import pytest
 
 from src.models.inference import CONFIG_FILENAME, load_inference_config, preprocess_for_model
-from src.utils.preprocessing import preprocess_tweet
+from src.utils.preprocessing import preprocess_for_transformer, preprocess_tweet
 
 REPO = Path(__file__).resolve().parent.parent
 ROBERTA_DIR = REPO / "models" / "roberta"
@@ -34,8 +34,10 @@ def roberta_cfg():
 
 
 def test_roberta_config_file_is_used(roberta_cfg):
-    # Without the file the legacy fallback would give the same answers, so check the source.
+    # Without the file the legacy fallback (tweet preprocessing) would be used silently.
     assert Path(roberta_cfg["source"]) == ROBERTA_DIR / CONFIG_FILENAME
+    assert roberta_cfg["preprocessing"] == "transformer"
+    assert roberta_cfg["max_len"] == 128
 
 
 def test_roberta_labels(roberta_cfg):
@@ -43,5 +45,11 @@ def test_roberta_labels(roberta_cfg):
 
 
 @pytest.mark.parametrize("text", INPUTS)
-def test_roberta_preprocessing_matches_default(roberta_cfg, text):
-    assert preprocess_for_model(text, roberta_cfg) == preprocess_tweet(text)
+def test_roberta_preprocessing_is_transformer(roberta_cfg, text):
+    assert preprocess_for_model(text, roberta_cfg) == preprocess_for_transformer(text)
+
+
+def test_roberta_preprocessing_differs_from_tweet(roberta_cfg):
+    # Case and emoji are kept for RoBERTa, unlike the LR/LSTM/GRU preprocessing.
+    text = "Absolutely THRILLED with the new update 😀"
+    assert preprocess_for_model(text, roberta_cfg) != preprocess_tweet(text)

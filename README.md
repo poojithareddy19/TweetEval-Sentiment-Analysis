@@ -140,8 +140,8 @@ TensorBoard logs go to `outputs/roberta_runs/`, which is gitignored.
 ## Results
 
 Metrics come from `results/<model>.json` on the official TweetEval test split, written by each
-training script (or, for the legacy RoBERTa row, by `scripts/evaluate_models.py`). Regenerate the
-table with:
+training script (LR, BiLSTM, BiGRU) or by `scripts/evaluate_models.py` (both RoBERTa rows).
+Regenerate the table with:
 
 ```bash
 python scripts/make_results_table.py
@@ -152,24 +152,27 @@ python scripts/make_results_table.py
 | TF-IDF + Logistic Regression | 0.5922 | 0.5887 | 0.5987 |
 | BiLSTM | 0.5785 | 0.5726 | 0.5841 |
 | BiGRU | 0.5693 | 0.5641 | 0.5799 |
+| RoBERTa (task-neutral base) | 0.7253 | 0.7239 | 0.7267 |
 | RoBERTa (legacy, task-tuned base, not comparable) | 0.7142 | 0.7131 | 0.7179 |
 
 Macro recall is the official TweetEval sentiment metric. The BiLSTM and BiGRU rows come from
 `python -m src.training.train_lstm --map-emoticons` and the GRU equivalent (10 epochs max,
 early stopping patience 2, balanced class weights, both stopped after epoch 4 with epoch 2
-restored). No comparable RoBERTa row exists yet because retraining from the task-neutral base
-needs a GPU. The last row is the committed legacy RoBERTa model (see below).
+restored).
 
-Note on the currently committed RoBERTa model: according to its
-`results/roberta_trainer_state_2025-12-05.json` (the Trainer log preserved from the original run) it reached 0.789 validation accuracy and
-0.781 validation macro F1 at epoch 1 (the checkpoint that is shipped). Validation loss then
-rose from 0.51 to 0.98 over epochs 2 and 3. That run started from
-`cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task,
-so its numbers are not comparable with the other models. Retraining with `train_roberta.py` now
-starts from the task-neutral `cardiffnlp/twitter-roberta-base`. The committed model's test-split
-numbers (last table row, `results/roberta_legacy.json`, produced with
-`python scripts/evaluate_models.py --models roberta --out-dir results --tag legacy ...`) are
-shown for reference only and are not comparable with the other rows.
+The committed RoBERTa model was fine-tuned with `python -m src.training.train_roberta` from the
+task-neutral `cardiffnlp/twitter-roberta-base`, and uses the transformer preprocessing recorded
+in `models/roberta/inference_config.json`. Its row was produced by
+`python scripts/evaluate_models.py --models roberta --out-dir results` from the committed weights.
+
+The last row is the earlier (legacy) RoBERTa model, kept for reference only. It started from
+`cardiffnlp/twitter-roberta-base-sentiment`, a base that was already fine-tuned on this task, so
+its numbers are not comparable with the other rows. According to
+`results/roberta_trainer_state_2025-12-05.json` (the Trainer log preserved from that run) it
+reached 0.789 validation accuracy and 0.781 validation macro F1 at epoch 1 (the checkpoint that
+was shipped); validation loss then rose from 0.51 to 0.98 over epochs 2 and 3. Its test numbers
+are in `results/roberta_legacy.json`. Its weights are no longer under `models/roberta/` but
+remain in the git history (for example at commit `555b6a1`).
 
 ## Supported Models
 
@@ -191,7 +194,7 @@ TweetEval-Sentiment-Analysis/
 ├── docs/
 │   └── DOCUMENTATION.md           # Results, limitations, testing and deployment details
 ├── models/
-│   ├── roberta/                   # Fine-tuned RoBERTa model
+│   ├── roberta/                   # RoBERTa fine-tuned from the task-neutral base
 │   ├── gru/                       # Pre-trained GRU model
 │   ├── lstm/                      # Pre-trained LSTM model
 │   └── lr/                        # Pre-trained Logistic Regression model

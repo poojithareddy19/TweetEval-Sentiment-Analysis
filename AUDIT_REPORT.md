@@ -546,7 +546,7 @@ Command output is saved under `outputs/audit/phase6_*.txt` (gitignored).
 
 | # | Gap (from docs) | Fix applied | Files changed | Evidence | Status |
 |---|---|---|---|---|---|
-| 1 | No comparable RoBERTa result | Legacy model evaluated on the official splits and shown last in the table, labelled not comparable | `scripts/evaluate_models.py`, `results/eval/roberta.json`, `results/roberta_legacy.json`, `scripts/make_results_table.py`, `README.md` | Test 0.7142 / 0.7131 / 0.7179; validation macro F1 equals Trainer `best_metric` exactly | Partially fixed: a comparable retrain from the task-neutral base (5.3) is deferred because torch here is CPU-only, the GPU has 4 GB, and a CPU run is excluded |
+| 1 | No comparable RoBERTa result | RoBERTa fine-tuned from the task-neutral base, verified and promoted; legacy result kept for reference | `models/roberta/`, `results/roberta.json`, `results/eval/roberta.json`, `scripts/make_results_table.py`, `tests/test_inference_config.py`, `README.md`, `docs/DOCUMENTATION.md` | Test 0.7253 / 0.7239 / 0.7267, reproduced exactly on CPU from the delivered weights; see "RoBERTa retrain and promotion" | Fixed |
 | 2 | RoBERTa has no inference config; generic labels | Explicit `inference_config.json` with legacy preprocessing; `id2label` / `label2id` renamed | `models/roberta/inference_config.json`, `models/roberta/config.json`, `tests/test_inference_config.py` | Git history (`59dc788`, `2f33e2b`); 12 new tests; `AutoConfig` returns `negative/neutral/positive`; predictions max_abs_diff 0 | Fixed |
 | 3 | Validation-to-test drop, modest scores | Reproduced exactly; class-weight ablation run | `results/eval/*.json`, `src/training/rnn_common.py` | Re-evaluation diff 0 for LR, BiLSTM, BiGRU; ablation table in Phase 5 | Deferred: confirmed as real, no experiment improved the official metric, GloVe (5.2) skipped |
 | 4 | RNN neutral-to-negative confusion | `--no-class-weight` ablation | `src/training/rnn_common.py`, `train_lstm.py`, `train_gru.py` | Test neutral-to-negative 42.6% with weights, 20.4% without; negative-to-neutral 17.8% to 39.5%; macro recall 0.5810 vs 0.5841 | Deferred: cause confirmed, but removing the weights moves the error and does not improve macro recall, so no promotion |
@@ -602,3 +602,93 @@ Fixed.
 The GloVe experiment (5.2) was declined by the user on 2026-10-29 and will not be run; gap 5
 stays Deferred. The comparable RoBERTa retrain (5.3) remains deferred (needs a GPU with more
 memory and CUDA PyTorch).
+
+## RoBERTa retrain and promotion
+
+### Retrain (5.3)
+
+The user ran `python -m src.training.train_roberta --out-dir outputs/experiments/roberta_neutral
+--results-path outputs/experiments/roberta_neutral.json` outside this session and placed the
+output in `outputs/experiments/` (files dated 2026-10-30 14:37). Base model
+`cardiffnlp/twitter-roberta-base`; `inference_config.json` records `"preprocessing":
+"transformer"`, `max_len` 128. No Trainer log or run directory was provided, so the training run
+itself (epochs, losses, hardware) is not documented here.
+
+Independent check (`outputs/audit/verify_roberta_neutral.py`, CPU, same steps as
+`scripts/evaluate_models.py`): every metric equals the reported value (difference 0) and both
+confusion matrices are identical.
+
+| Split | Accuracy | Macro F1 | Macro recall |
+|---|---|---|---|
+| validation | 0.7375 | 0.7218 | 0.7231 |
+| test | 0.7253 | 0.7239 | 0.7267 |
+
+File comparison with the committed `models/roberta/`: `config.json`, `vocab.json`,
+`special_tokens_map.json`, `tokenizer_config.json` identical; `merges.txt` identical in git (the
+working copy differed only by CRLF line endings from `core.autocrlf`); `tokenizer.json` differs
+only in its `truncation` setting; `model.safetensors` and `inference_config.json` differ;
+`training_args.bin` is new and gitignored.
+
+### Promotion (approved)
+
+Branch `feat/promote-roberta-neutral` from `main` at `555b6a1`:
+
+```
+cea7fe6 Replace RoBERTa with the model fine-tuned from the task-neutral base
+125037f Rename RoBERTa row in the results table
+fea044f Add evaluation results for the promoted RoBERTa model
+0054636 Update README results for the promoted RoBERTa model
+f85667c Update documentation for the promoted RoBERTa model
+```
+
+- `models/roberta/`: `model.safetensors` (new LFS object `39a2ae0cfd`, 498,615,900 bytes),
+  `inference_config.json` and `tokenizer.json` replaced from the experiment directory. The legacy
+  weights (LFS object `5d3e167417`) remain in git history, for example at `555b6a1`.
+- `tests/test_inference_config.py`: now asserts the transformer preprocessing (13 tests).
+- `results/roberta.json` and `results/eval/roberta.json` written by
+  `python scripts/evaluate_models.py --models roberta --device cpu --out-dir results` (and
+  `--out-dir results/eval`) from the committed weights; both equal the verified numbers above.
+  `results/roberta_legacy.json` unchanged.
+- `scripts/make_results_table.py`: `roberta` display name is now "RoBERTa (task-neutral base)".
+- README and `docs/DOCUMENTATION.md`: results tables regenerated, per-class row added, legacy model
+  described as no longer committed, limitations updated (no validation-to-test drop for RoBERTa,
+  single run with no Trainer log).
+
+### Checks after promotion
+
+- `pytest -q` and `REQUIRE_MODELS=1 pytest -q`: 67 passed. `ruff check .`: clean.
+- `python outputs/audit/check_readme_numbers.py`: README and documentation tables match
+  `results/*.json` (`ALL MATCH`).
+- SHA-256 of every file under `models/lr`, `models/lstm` and `models/gru` identical to
+  `outputs/audit/baseline_models.txt`. Under `models/roberta/` only `model.safetensors`,
+  `inference_config.json` and `tokenizer.json` changed on this branch (`config.json` differs from
+  the baseline because of the label rename approved in Phase 1).
+- Baseline predictions (`capture_predictions.py --compare baseline_predictions.json`):
+
+  ```
+  lr       allclose(atol=1e-06) = True  max_abs_diff = 0
+  lstm     allclose(atol=1e-06) = True  max_abs_diff = 0
+  gru      allclose(atol=1e-06) = True  max_abs_diff = 0
+  roberta  allclose(atol=1e-06) = False  max_abs_diff = 0.197
+  ```
+
+  The RoBERTa change is intentional (replaced model). Predicted labels are the same on all 9
+  inputs; confidences differ, and 7 of 9 inputs are now preprocessed differently (transformer
+  preprocessing keeps case, emoji and emoticons):
+
+  | # | Input | Legacy RoBERTa | Promoted RoBERTa |
+  |---|---|---|---|
+  | 1 | `I love this so much :)` | positive (0.9958) | positive (0.9901) |
+  | 2 | `worst day ever :(` | negative (0.9549) | negative (0.9636) |
+  | 3 | `@user check this out http://t.co/abc123 #awesome` | positive (0.9856) | positive (0.9681) |
+  | 4 | `The meeting is at 10:30 tomorrow.` | neutral (0.9823) | neutral (0.9502) |
+  | 5 | `not good :( but ok <3 maybe :/` | negative (0.8150) | negative (0.6183) |
+  | 6 | `Absolutely THRILLED with the new update \U0001f600` | positive (0.9943) | positive (0.9857) |
+  | 7 | `I can't believe they cancelled the show again` | negative (0.9463) | negative (0.8817) |
+  | 8 | `It's fine I guess` | positive (0.6268) | positive (0.5446) |
+  | 9 | `Mixed CaSe With Trailing Spaces   ` | neutral (0.9752) | neutral (0.9494) |
+
+- Em dash scan (text files changed vs `main`, `grep -I`) and attribution scan of commit messages:
+  no matches.
+
+Gap 1 is now Fixed.
