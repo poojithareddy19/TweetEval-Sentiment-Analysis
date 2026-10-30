@@ -14,7 +14,7 @@ DISPLAY_NAMES = {
     "lr": "TF-IDF + Logistic Regression",
     "lstm": "BiLSTM",
     "gru": "BiGRU",
-    "roberta": "RoBERTa (fine-tuned)",
+    "roberta": "RoBERTa (task-neutral base)",
     "roberta_legacy": "RoBERTa (legacy, task-tuned base, not comparable)",
 }
 ORDER = ["lr", "lstm", "gru", "roberta", "roberta_legacy"]
